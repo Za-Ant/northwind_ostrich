@@ -57,3 +57,128 @@ ETL proces pozostával z troch hlavných fáz: `extrahovanie` (Extract), `transf
 
 ---
 ### **3.1 Extract (Extrahovanie dát)**
+Dáta z `.csv` súborov boli nahrané do Snowflake pomocou interného stage nazvaného `ostrich_stage`. Tento stage slúži ako dočasné úložisko na import a export dát. Bol vytvorený nasledovným príkazom:
+```sql
+CREATE OR REPLACE STAGE ostrich_stage FILE_FORMAT = (TYPE = 'CSV' FIELD_OPTIONALLY_ENCLOSED_BY = '"');
+```
+
+`.csv` súbory pre produkty, objednávky, zákazníkov a iné entity boli nahraté do zodpovedajúcich staging tabuliek pomocou príkazu `COPY INTO`. Podobný príkaz bol použitý pre každú tabuľku:
+```sql
+COPY INTO products_staging
+FROM @ostrich_stage/products.csv
+FILE_FORMAT = (TYPE = 'CSV' FIELD_OPTIONALLY_ENCLOSED_BY = '"' SKIP_HEADER = 1);
+```
+
+Parameter `SKIP_HEADER` zabezpečil ignorovanie hlavičkových riadkov v zdrojových súboroch, pričom konzistentné formátovanie zabezpečilo bezchybné nahrávanie.
+
+---
+### **3.2 Transfor (Transformácia dát)**
+Počas tejto fázy boli dáta zo staging tabuliek očistené, transformované a obohatené, aby sa vytvorili dimenzie a faktové tabuľky optimalizované na analýzu. Kľúčové transformácie zahŕňali odstraňovanie duplicít, obohacovanie atribútov a odvodenie hierarchií.
+
+#### **3.2.1 Dimenzionálne tabuľky**
+**Adresná dimenzia** (`dim_addresses`): Konsolidované jedinečné adresy, mestá, poštové smerovacie čísla a krajiny pre dodávateľov a zákazníkov.
+```sql
+INSERT INTO dim_addresses (address, city, postalCode, country)
+SELECT DISTINCT address, city, postalCode, country
+FROM (
+    SELECT address, city, postalCode, country FROM suppliers_staging
+    UNION
+    SELECT address, city, postalCode, country FROM customers_staging
+);
+```
+
+**Dimenzie zákazníkov a dodávateľov**: Mapované údaje zákazníkov a dodávateľov na ID adries pre jednoduchšie spojenia.
+```sql
+CREATE OR REPLACE TABLE dim_customers AS 
+SELECT
+    c.id AS customer_id,
+    c.customername AS name,
+    a.address_id
+FROM customers_staging c
+JOIN dim_addresses a ON c.address = a.address
+   AND c.city = a.city
+   AND c.postalCode = a.postalCode
+   AND c.country = a.country;
+```
+```sql
+CREATE OR REPLACE TABLE dim_suppliers AS 
+SELECT
+    s.id AS supplier_id,
+    s.suppliername AS name,
+    a.address_id
+FROM suppliers_staging s
+JOIN dim_addresses a ON s.address = a.address
+   AND s.city = a.city
+   AND s.postalCode = a.postalCode
+   AND s.country = a.country;
+```
+
+**Dimenzia zamestnancov** (`dim_employees`): Kombinované mená a priezviská zamestnancov na vytvorenie úplných mien.
+```sql
+CREATE OR REPLACE TABLE dim_employees AS
+SELECT 
+    id as employee_id,
+    firstname || ' ' || lastname AS name
+FROM employees_staging;
+```
+
+**Dimenzia dátumu** (`dim_date`): Analyzované dátumy objednávok na odvodenie roka, mesiaca, dňa a dňa v týždni.
+```sql
+CREATE OR REPLACE TABLE dim_date AS
+SELECT
+    DISTINCT
+    TO_DATE(TO_TIMESTAMP(orderdate, 'YYYY-MM-DD HH24:MI:SS')) AS date,
+    DATE_PART('year', TO_TIMESTAMP(orderdate, 'YYYY-MM-DD HH24:MI:SS')) AS year,
+    DATE_PART('month', TO_TIMESTAMP(orderdate, 'YYYY-MM-DD HH24:MI:SS')) AS month,
+    DATE_PART('day', TO_TIMESTAMP(orderdate, 'YYYY-MM-DD HH24:MI:SS')) AS day,
+    CASE DATE_PART(dow, TO_TIMESTAMP(orderdate, 'YYYY-MM-DD HH24:MI:SS')) 
+        WHEN 1 THEN 'Monday'
+        WHEN 2 THEN 'Tuesday'
+        WHEN 3 THEN 'Wednesday'
+        WHEN 4 THEN 'Thursday'
+        WHEN 5 THEN 'Friday'
+        WHEN 6 THEN 'Saturday'
+        WHEN 7 THEN 'Sunday'
+    END AS dayOfWeekAsString
+FROM orders_staging;
+```
+
+#### **3.2.2 Faktová tabuľka**
+Tabuľka `fact_orders` bola vytvorená na ukladanie kľúčových transakčných dát, spájajúcich dimenzie s odvodenými metrikami, ako sú cena a množstvo produktov.
+```sql
+CREATE OR REPLACE TABLE fact_orders AS
+SELECT
+    o.id AS order_id,
+    od.quantity AS product_quantity,
+    ps.price AS product_price,
+    (od.quantity * ps.price) AS total_price,
+    b.id AS bridge_id,
+    TO_DATE(TO_TIMESTAMP(o.orderDate, 'YYYY-MM-DD HH24:MI:SS')) AS date_id,
+    e.employee_id,
+    ps.supplierId AS supplier_id,
+    c.customer_id AS customer_id
+FROM orders_staging o
+JOIN bridge_orders_products b ON o.id = b.orderid
+JOIN orderdetails_staging od ON b.orderid = od.orderid AND b.productid = od.productid
+JOIN products_staging ps ON b.productid = ps.id
+JOIN dim_employees e ON o.employeeid = e.employee_id
+JOIN dim_customers c ON o.customerid = c.customer_id;
+```
+
+---
+### **3.3 Nahrávanie dát (Load)**
+Po transformáciách boli dimenzionálne a faktové tabuľky naplnené dátami. Staging tabuľky boli následne odstránené na optimalizáciu úložného priestoru.
+```sql
+DROP IF EXISTS products_staging;
+DROP IF EXISTS orders_staging;
+DROP IF EXISTS customers_staging;
+DROP IF EXISTS categories_staging;
+DROP IF EXISTS employees_staging;
+DROP IF EXISTS orderdetails_staging;
+DROP IF EXISTS shippers_staging;
+DROP IF EXISTS suppliers_staging;
+```
+
+---
+## **4 Vizualizácia dát**
+Bolo vytvorených `6 vizualizacii`, ktoré poskytujú základný prehľad o kľúčových metrikách a trendoch týkajúcich sa objednávok, zákazníkov, produktov a predaja.
