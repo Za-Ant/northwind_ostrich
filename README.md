@@ -182,3 +182,63 @@ DROP IF EXISTS suppliers_staging;
 ---
 ## **4 Vizualizácia dát**
 Bolo vytvorených `6 vizualizacii`, ktoré poskytujú základný prehľad o kľúčových metrikách a trendoch týkajúcich sa objednávok, zákazníkov, produktov a predaja.
+
+---
+### **Graf 1. Chronologia objednávok**
+<p align="center">
+  <img src="https://github.com/Za-Ant/northwind_ostrich/blob/master/grafy/graf1.png" alt="Chronologia objednávok">
+  <br>
+  <em>Obrázok 3 Chronologia objednávok</em>
+</p>
+
+To nám umožňuje vidieť chronológiu objednávok v čase. Z grafu napríklad vyplýva, že ľudia si častejšie objednávajú v zime ako v lete.
+
+---
+### **Graf 2. Priemerný počet objednávok za deň**
+<p align="center">
+  <img src="https://github.com/Za-Ant/northwind_ostrich/blob/master/grafy/graf2.png" alt="Priemerný počet objednávok za deň">
+  <br>
+  <em>Obrázok 4 Priemerný počet objednávok za deň</em>
+</p>
+
+Tento graf zobrazuje najčastejšie objednávané dni v týždni.
+
+---
+### **Graf 3. Počet dodávateľov podľa krajiny**
+<p align="center">
+  <img src="https://github.com/Za-Ant/northwind_ostrich/blob/master/grafy/graf3.png" alt="Počet dodávateľov podľa krajiny">
+  <br>
+  <em>Obrázok 5 Počet dodávateľov podľa krajiny</em>
+</p>
+
+Môžeme tiež zistiť, odkiaľ pochádza tovar pre zákazníkov. Tu vidíme, že prvým dodávateľom tovaru je Nemecko. 
+
+---
+### **Graf 4. Počet zákazníkov podľa krajiny**
+<p align="center">
+  <img src="https://github.com/Za-Ant/northwind_ostrich/blob/master/grafy/graf4.png" alt=Počet zákazníkov podľa krajiny">
+  <br>
+  <em>Obrázok 6 Počet zákazníkov podľa krajiny</em>
+</p>
+
+V grafe priemerného počtu zákazníkov podľa krajiny môžete vidieť, že najčastejšie sú to ľudia z USA. Na druhom mieste je s malým rozdielom Nemecko.
+
+---
+### **Graf 5. Lojálni zákazníci**
+<p align="center">
+  <img src="https://github.com/Za-Ant/northwind_ostrich/blob/master/grafy/graf5.png" alt="Lojálni zákazníci">
+  <br>
+  <em>Obrázok 7 Lojálni zákazníci</em>
+</p>
+
+Graf zobrazuje najvernejších zákazníkov obchodu zoradených podľa počtu objednávok. Na prvom mieste je Ernst Handel s 35 objednávkami, nasleduje Rattlesnake Canyon Grocery s 22 objednávkami a QUICK-Stop s 20 objednávkami. Medzi prvými tromi a ostatnými je vidieť pomerne veľký rozdiel.
+
+---
+### **Graf 6. Obľúbené kategórie a konkrétne produkty**
+<p align="center">
+  <img src="https://github.com/Za-Ant/northwind_ostrich/blob/master/grafy/graf6.png" alt="Obľúbené kategórie a konkrétne produkty">
+  <br>
+  <em>Obrázok 8 Obľúbené kategórie a konkrétne produkty</em>
+</p>
+
+Graf zobrazuje obľúbenosť rôznych kategórií a produktov podľa počtu objednávok. Lídrami sú výrobky z kategórie „Mliečne výrobky“, ako napríklad „Gorgonzola Telino“ a „Camembert Pierrot“, čo zdôrazňuje vysoký dopyt po mliečnych výrobkoch. „Steeleye Stout“ z kategórie ‚Nápoje‘ je na treťom mieste, čo poukazuje na záujem o nápoje. Vysokú popularitu vykazujú aj výrobky z rôznych kategórií vrátane mäsa a cukroviniek. Celkovo graf odráža rozmanitosť preferencií zákazníkov a vysoký podiel mliečnych výrobkov medzi obľúbenými položkami.
