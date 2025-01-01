@@ -192,7 +192,9 @@ Bolo vytvorených `6 vizualizacii`, ktoré poskytujú základný prehľad o kľ�
 </p>
 
 To nám umožňuje vidieť chronológiu objednávok v čase. Z grafu napríklad vyplýva, že ľudia si častejšie objednávajú v zime ako v lete.
-
+```sql
+SELECT SUM(product_quantity), date_id, FROM fact_orders GROUP BY date_id;
+```
 ---
 ### **Graf 2. Priemerný počet objednávok za deň**
 <p align="center">
@@ -202,7 +204,9 @@ To nám umožňuje vidieť chronológiu objednávok v čase. Z grafu napríklad 
 </p>
 
 Tento graf zobrazuje najčastejšie objednávané dni v týždni.
-
+```sql
+SELECT ROUND(AVG(f.product_quantity),0), d.dayofweekasstring FROM fact_orders f JOIN dim_date d ON f.date_id = d.date GROUP BY d.dayofweekasstring;
+```
 ---
 ### **Graf 3. Počet dodávateľov podľa krajiny**
 <p align="center">
@@ -212,7 +216,9 @@ Tento graf zobrazuje najčastejšie objednávané dni v týždni.
 </p>
 
 Môžeme tiež zistiť, odkiaľ pochádza tovar pre zákazníkov. Tu vidíme, že prvým dodávateľom tovaru je Nemecko. 
-
+```sql
+SELECT a.country, COUNT(a.country) as count FROM fact_orders f JOIN dim_suppliers s ON f.supplier_id = s.supplier_id JOIN dim_addresses a ON s.address_id = a.address_id GROUP BY a.country ORDER BY count DESC;
+```
 ---
 ### **Graf 4. Počet zákazníkov podľa krajiny**
 <p align="center">
@@ -222,7 +228,9 @@ Môžeme tiež zistiť, odkiaľ pochádza tovar pre zákazníkov. Tu vidíme, ž
 </p>
 
 V grafe priemerného počtu zákazníkov podľa krajiny môžete vidieť, že najčastejšie sú to ľudia z USA. Na druhom mieste je s malým rozdielom Nemecko.
-
+```sql
+SELECT a.country, COUNT(a.country) as count FROM fact_orders f JOIN dim_customers c ON f.customer_id = c.customer_id JOIN dim_addresses a ON c.address_id = a.address_id GROUP BY a.country ORDER BY count DESC;
+```
 ---
 ### **Graf 5. Lojálni zákazníci**
 <p align="center">
@@ -232,7 +240,9 @@ V grafe priemerného počtu zákazníkov podľa krajiny môžete vidieť, že na
 </p>
 
 Graf zobrazuje najvernejších zákazníkov obchodu zoradených podľa počtu objednávok. Na prvom mieste je Ernst Handel s 35 objednávkami, nasleduje Rattlesnake Canyon Grocery s 22 objednávkami a QUICK-Stop s 20 objednávkami. Medzi prvými tromi a ostatnými je vidieť pomerne veľký rozdiel.
-
+```sql
+SELECT c.name, COUNT(f.product_quantity) as count FROM fact_orders f JOIN dim_customers c ON f.customer_id = c.customer_id GROUP BY c.customer_id, c.name ORDER BY count DESC;
+```
 ---
 ### **Graf 6. Obľúbené kategórie a konkrétne produkty**
 <p align="center">
@@ -242,3 +252,8 @@ Graf zobrazuje najvernejších zákazníkov obchodu zoradených podľa počtu ob
 </p>
 
 Graf zobrazuje obľúbenosť rôznych kategórií a produktov podľa počtu objednávok. Lídrami sú výrobky z kategórie „Mliečne výrobky“, ako napríklad „Gorgonzola Telino“ a „Camembert Pierrot“, čo zdôrazňuje vysoký dopyt po mliečnych výrobkoch. „Steeleye Stout“ z kategórie ‚Nápoje‘ je na treťom mieste, čo poukazuje na záujem o nápoje. Vysokú popularitu vykazujú aj výrobky z rôznych kategórií vrátane mäsa a cukroviniek. Celkovo graf odráža rozmanitosť preferencií zákazníkov a vysoký podiel mliečnych výrobkov medzi obľúbenými položkami.
+```sql
+SELECT f.product_quantity, p.productname, p.categoryname FROM fact_orders f JOIN bridge_orders_products b ON f.bridge_id = b.id JOIN dim_products p ON b.productid = p.product_id ORDER BY f.product_quantity DESC;
+```
+
+**Autor:** Antonina Zakharova
