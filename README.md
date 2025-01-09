@@ -33,7 +33,7 @@ ERD diagram **NothWind**:
 ---
 ## **2 Dimenzionálny model**
 
-Navrhnutý bol **hviezdicový model (star schema)**, ktorý umožňuje efektívnu analýzu údajov z Northwind databázy. Centrálnu časť predstavuje faktová tabuľka **`fact_ratings`**, ktorá je prepojená s nasledujúcimi dimenziami:
+Navrhnutý bol **hviezdicový model (star schema)**, ktorý umožňuje efektívnu analýzu údajov z Northwind databázy. Centrálnu časť predstavuje faktová tabuľka **`fact_orders`**, ktorá je prepojená s nasledujúcimi dimenziami:
 - **`dim_products`**: Obsahuje podrobné informácie o produktoch (názov, jednotka, cena, názov kategórie, popis kategórie).
 - **`dim_customers`**: Obsahuje demografické údaje o zákazníkoch (meno, adresa, mesto, PSČ, krajina).
 - **`dim_suppliers`**: Obsahuje údaje o dodávateľoch (meno, adresa).
