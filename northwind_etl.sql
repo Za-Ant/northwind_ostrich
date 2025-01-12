@@ -111,35 +111,16 @@ SELECT * FROM orderdetails_staging;
 SELECT * FROM shippers_staging;
 SELECT * FROM suppliers_staging;
 
-CREATE OR REPLACE TABLE dim_addresses (
-    address_id INT AUTOINCREMENT PRIMARY KEY,
-    address STRING,
-    city STRING,
-    postalCode STRING,
-    country STRING
-);
-
-INSERT INTO dim_addresses (address, city, postalCode, country)
-SELECT DISTINCT address, city, postalCode, country
-FROM (
-    SELECT address, city, postalCode, country FROM suppliers_staging
-    UNION
-    SELECT address, city, postalCode, country FROM customers_staging
-);
-
-SELECT * FROM dim_addresses;
-
 
 CREATE OR REPLACE TABLE dim_customers AS 
 SELECT
     c.id AS customer_id,
     c.customername AS name,
-    a.address_id
-FROM customers_staging c
-JOIN dim_addresses a ON c.address = a.address
-   AND c.city = a.city
-   AND c.postalCode = a.postalCode
-   AND c.country = a.country;
+    address,
+    city,
+    postalCode,
+    country
+FROM customers_staging c;
 
 SELECT * FROM dim_customers;
 
@@ -147,12 +128,11 @@ CREATE OR REPLACE TABLE dim_suppliers AS
 SELECT
     s.id AS supplier_id,
     s.suppliername AS name,
-    a.address_id
-FROM suppliers_staging s
-JOIN dim_addresses a ON s.address = a.address
-   AND s.city = a.city
-   AND s.postalCode = a.postalCode
-   AND s.country = a.country;
+    address,
+    city,
+    postalCode,
+    country
+FROM suppliers_staging s;
 
 SELECT * FROM dim_suppliers;
 
@@ -226,11 +206,11 @@ JOIN dim_customers c ON o.customerid = c.customer_id;
 SELECT * FROM fact_orders;
 
 
-DROP IF EXISTS products_staging;
-DROP IF EXISTS orders_staging;
-DROP IF EXISTS customers_staging;
-DROP IF EXISTS categories_staging;
-DROP IF EXISTS employees_staging;
-DROP IF EXISTS orderdetails_staging;
-DROP IF EXISTS shippers_staging;
-DROP IF EXISTS suppliers_staging;
+DROP TABLE IF EXISTS products_staging;
+DROP TABLE IF EXISTS orders_staging;
+DROP TABLE IF EXISTS customers_staging;
+DROP TABLE IF EXISTS categories_staging;
+DROP TABLE IF EXISTS employees_staging;
+DROP TABLE IF EXISTS orderdetails_staging;
+DROP TABLE IF EXISTS shippers_staging;
+DROP TABLE IF EXISTS suppliers_staging;

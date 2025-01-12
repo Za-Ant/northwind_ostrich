@@ -25,7 +25,7 @@ Súbor údajov obsahuje päť hlavných tabuliek:
 ERD diagram **NothWind**:
 
 <p align="center">
-  <img src="https://github.com/Za-Ant/northwind_ostrich/blob/master/Northwind_ERD.png" alt="ERD Schema">
+  <img src="./Northwind_ERD.png" alt="ERD Schema">
   <br>
   <em>Obrázok 1 Entitno-relačná schéma NothWind</em>
 </p>
@@ -46,7 +46,7 @@ Pre reláciu medzi produktmi a objednávkami bola použitá prepojovacia tabuľk
 Struktúra hviezdicového modelu je znázornená na diagrame. Tento model je optimalizovaný pre analýzu predajných trendov, správania zákazníkov a výkonnosti produktov.
 
 <p align="center">
-  <img src="https://github.com/Za-Ant/northwind_ostrich/blob/master/starscheme.png" alt="Star Schema">
+  <img src="./starscheme.png" alt="Star Schema">
   <br>
   <em>Obrázok 2 Schéma hviezdy pre NothWind</em>
 </p>
@@ -76,44 +76,32 @@ Parameter `SKIP_HEADER` zabezpečil ignorovanie hlavičkových riadkov v zdrojov
 Počas tejto fázy boli dáta zo staging tabuliek očistené, transformované a obohatené, aby sa vytvorili dimenzie a faktové tabuľky optimalizované na analýzu. Kľúčové transformácie zahŕňali odstraňovanie duplicít, obohacovanie atribútov a odvodenie hierarchií.
 
 #### **3.2.1 Dimenzionálne tabuľky**
-**Adresná dimenzia** (`dim_addresses`): Konsolidované jedinečné adresy, mestá, poštové smerovacie čísla a krajiny pre dodávateľov a zákazníkov.
-```sql
-INSERT INTO dim_addresses (address, city, postalCode, country)
-SELECT DISTINCT address, city, postalCode, country
-FROM (
-    SELECT address, city, postalCode, country FROM suppliers_staging
-    UNION
-    SELECT address, city, postalCode, country FROM customers_staging
-);
-```
 
-**Dimenzie zákazníkov a dodávateľov**: Mapované údaje zákazníkov a dodávateľov na ID adries pre jednoduchšie spojenia.
+**Dimenzie zákazníkov a dodávateľov**: Mapované údaje zákazníkov a dodávateľov na ID adries pre jednoduchšie spojenia. Typ dimenzie SCD1 (Slowly changing dimensions - Overwrite old value) pre zákazníkov a dodávateľov.
 ```sql
 CREATE OR REPLACE TABLE dim_customers AS 
 SELECT
     c.id AS customer_id,
     c.customername AS name,
-    a.address_id
-FROM customers_staging c
-JOIN dim_addresses a ON c.address = a.address
-   AND c.city = a.city
-   AND c.postalCode = a.postalCode
-   AND c.country = a.country;
+    address,
+    city,
+    postalCode,
+    country
+FROM customers_staging c;
 ```
 ```sql
 CREATE OR REPLACE TABLE dim_suppliers AS 
 SELECT
     s.id AS supplier_id,
     s.suppliername AS name,
-    a.address_id
-FROM suppliers_staging s
-JOIN dim_addresses a ON s.address = a.address
-   AND s.city = a.city
-   AND s.postalCode = a.postalCode
-   AND s.country = a.country;
+    address,
+    city,
+    postalCode,
+    country
+FROM suppliers_staging s;
 ```
 
-**Dimenzia zamestnancov** (`dim_employees`): Kombinované mená a priezviská zamestnancov na vytvorenie úplných mien.
+**Dimenzia zamestnancov** (`dim_employees`): Kombinované mená a priezviská zamestnancov na vytvorenie úplných mien. Typ dimenzie SCD1 (Slowly changing dimensions - Overwrite old value).
 ```sql
 CREATE OR REPLACE TABLE dim_employees AS
 SELECT 
@@ -122,7 +110,7 @@ SELECT
 FROM employees_staging;
 ```
 
-**Dimenzia dátumu** (`dim_date`): Analyzované dátumy objednávok na odvodenie roka, mesiaca, dňa a dňa v týždni.
+**Dimenzia dátumu** (`dim_date`): Analyzované dátumy objednávok na odvodenie roka, mesiaca, dňa a dňa v týždni. Typ dimenzie SCD0 (Slowly changing dimensions - Retain original value)
 ```sql
 CREATE OR REPLACE TABLE dim_date AS
 SELECT
@@ -186,7 +174,7 @@ Bolo vytvorených `6 vizualizacii`, ktoré poskytujú základný prehľad o kľ�
 ---
 ### **Graf 1. Chronologia objednávok**
 <p align="center">
-  <img src="https://github.com/Za-Ant/northwind_ostrich/blob/master/grafy/graf1.png" alt="Chronologia objednávok">
+  <img src="./grafy/graf1.png" alt="Chronologia objednávok">
   <br>
   <em>Obrázok 3 Chronologia objednávok</em>
 </p>
@@ -198,7 +186,7 @@ SELECT SUM(product_quantity), date_id, FROM fact_orders GROUP BY date_id;
 ---
 ### **Graf 2. Priemerný počet objednávok za deň**
 <p align="center">
-  <img src="https://github.com/Za-Ant/northwind_ostrich/blob/master/grafy/graf2.png" alt="Priemerný počet objednávok za deň">
+  <img src="./grafy/graf2.png" alt="Priemerný počet objednávok za deň">
   <br>
   <em>Obrázok 4 Priemerný počet objednávok za deň</em>
 </p>
@@ -210,31 +198,31 @@ SELECT ROUND(AVG(f.product_quantity),0), d.dayofweekasstring FROM fact_orders f 
 ---
 ### **Graf 3. Počet dodávateľov podľa krajiny**
 <p align="center">
-  <img src="https://github.com/Za-Ant/northwind_ostrich/blob/master/grafy/graf3.png" alt="Počet dodávateľov podľa krajiny">
+  <img src="./grafy/graf3.png" alt="Počet dodávateľov podľa krajiny">
   <br>
   <em>Obrázok 5 Počet dodávateľov podľa krajiny</em>
 </p>
 
 Môžeme tiež zistiť, odkiaľ pochádza tovar pre zákazníkov. Tu vidíme, že prvým dodávateľom tovaru je Nemecko. 
 ```sql
-SELECT a.country, COUNT(a.country) as count FROM fact_orders f JOIN dim_suppliers s ON f.supplier_id = s.supplier_id JOIN dim_addresses a ON s.address_id = a.address_id GROUP BY a.country ORDER BY count DESC;
+SELECT s.country, COUNT(s.country) as count FROM fact_orders f JOIN dim_suppliers s ON f.supplier_id = s.supplier_id GROUP BY s.country ORDER BY count DESC;
 ```
 ---
 ### **Graf 4. Počet zákazníkov podľa krajiny**
 <p align="center">
-  <img src="https://github.com/Za-Ant/northwind_ostrich/blob/master/grafy/graf4.png" alt=Počet zákazníkov podľa krajiny">
+  <img src="./grafy/graf4.png" alt=Počet zákazníkov podľa krajiny">
   <br>
   <em>Obrázok 6 Počet zákazníkov podľa krajiny</em>
 </p>
 
 V grafe priemerného počtu zákazníkov podľa krajiny môžete vidieť, že najčastejšie sú to ľudia z USA. Na druhom mieste je s malým rozdielom Nemecko.
 ```sql
-SELECT a.country, COUNT(a.country) as count FROM fact_orders f JOIN dim_customers c ON f.customer_id = c.customer_id JOIN dim_addresses a ON c.address_id = a.address_id GROUP BY a.country ORDER BY count DESC;
+SELECT c.country, COUNT(c.country) as count FROM fact_orders f JOIN dim_customers c ON f.customer_id = c.customer_id GROUP BY c.country ORDER BY count DESC;
 ```
 ---
 ### **Graf 5. Lojálni zákazníci**
 <p align="center">
-  <img src="https://github.com/Za-Ant/northwind_ostrich/blob/master/grafy/graf5.png" alt="Lojálni zákazníci">
+  <img src="./grafy/graf5.png" alt="Lojálni zákazníci">
   <br>
   <em>Obrázok 7 Lojálni zákazníci</em>
 </p>
@@ -246,7 +234,7 @@ SELECT c.name, COUNT(f.product_quantity) as count FROM fact_orders f JOIN dim_cu
 ---
 ### **Graf 6. Obľúbené kategórie a konkrétne produkty**
 <p align="center">
-  <img src="https://github.com/Za-Ant/northwind_ostrich/blob/master/grafy/graf6.png" alt="Obľúbené kategórie a konkrétne produkty">
+  <img src="./grafy/graf6.png" alt="Obľúbené kategórie a konkrétne produkty">
   <br>
   <em>Obrázok 8 Obľúbené kategórie a konkrétne produkty</em>
 </p>
